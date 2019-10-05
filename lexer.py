@@ -7,7 +7,6 @@ class Token:
     value: typing.Any
     offset: int
 
-
 class Lexer:
     def __init__(self, input_):
         self.input = input_

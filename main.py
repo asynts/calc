@@ -4,16 +4,6 @@ from dataclasses import dataclass
 
 from lexer import Lexer
 
-lx = Lexer('(20+1)*2')
-
-PRECEDENCE = {
-    '+': 1,
-    '-': 1,
-    '*': 2,
-    '/': 2,
-    '(': 0,
-}
-
 @dataclass
 class Expr:
     pass
@@ -30,39 +20,65 @@ class ExprBinary(Expr):
     op: str
     offset: int
 
-operands = []
-operations = []
+_PRECEDENCE = {
+    '+': 1,
+    '-': 1,
+    '*': 2,
+    '/': 2,
+    '(': 0,
+}
 
-def apply_():
-    rhs = operands.pop()
-    lhs = operands.pop()
-    op = operations.pop()
+class Parser:
+    def __init__(self, lexer_):
+        self._lexer = lexer_
+        self.operands = []
+        self.operators = []
 
-    operands.append(ExprBinary(lhs, rhs, op.value, op.offset))
+    def apply(self):
+        rhs = self.operands.pop()
+        lhs = self.operands.pop()
+        op = self.operators.pop()
 
-while lx.has_more_input:
-    node = lx.next_integer()
-    if node is not None:
-        operands.append(ExprInteger(node.value, node.offset))
-        continue
+        self.operands.append(ExprBinary(lhs, rhs, op.value, op.offset))
 
-    node = lx.next_special()
-    if node is not None:
+    def parse_integer(self):
+        node = self._lexer.next_integer()
+        if node is None: return False
+
+        self.operands.append(ExprInteger(node.value, node.offset))
+        return True
+
+    def parse_special(self):
+        node = self._lexer.next_special()
+        if node is None: return False
+
         if node.value == '(':
-            operations.append(node)
+            self.operators.append(node)
         elif node.value == ')':
-            while len(operations) > 0 and operations[-1].value != '(':
-                apply_()
-            operations.pop()
+            while len(self.operators) > 0 and self.operators[-1].value != '(':
+                self.apply()
+            self.operators.pop()
         else:
-            if len(operations) > 0 and PRECEDENCE[operations[-1].value] > PRECEDENCE[node.value]:
-                apply_()
-            operations.append(node)
-        continue
+            if len(self.operators) > 0 \
+           and _PRECEDENCE[self.operators[-1].value] > _PRECEDENCE[node.value]:
+                self.apply()
+            self.operators.append(node)
 
-    raise SyntaxError
+        return True
 
-while len(operations) > 0:
-    apply_()
+def parse(input_):
+    lexer_ = Lexer(input_)
+    parser = Parser(lexer_)
 
-print(operands)
+    while lexer_.has_more_input:
+        if not (parser.parse_integer() or parser.parse_special()):
+            raise SyntaxError
+
+    while len(parser.operators) > 0:
+        parser.apply()
+
+    assert len(parser.operands) == 1
+    return parser.operands[0]
+
+
+print( parse('(20+1)*2/4') )

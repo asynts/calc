@@ -41,7 +41,10 @@ class Parser:
         return token
 
     def parse_expr(self) -> nodes.Expr:
-        exprparser = ExprParser()
+        if not self._has_more:
+            return None
+
+        exprparser = ExprParser(self._peek())
 
         while self._has_more:
             if exprparser.process(self._peek()):
@@ -61,10 +64,10 @@ PRECEDENCE = {
 }
 
 class ExprParser:
-    def __init__(self):
+    def __init__(self, begin):
+        self._begin = begin
         self._operands = []
         self._operators = []
-        self._last_processed_token = None
 
     def _apply(self):
         operator = self._operators.pop()
@@ -120,4 +123,4 @@ class ExprParser:
         if len(self._operands) == 1:
             return self._operands[0]
 
-        raise ParserError(self._last_processed_token, 'invalid expression')
+        raise ParserError(self._begin, 'invalid expression')

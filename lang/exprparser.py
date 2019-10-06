@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from enum import Enum
 from dataclasses import dataclass
 
 from .lexer import Lexer
@@ -20,11 +21,25 @@ class ExprBinary(Expr):
     op: str
     offset: int
 
+class Associativity(Enum):
+    LEFT = 0
+    RIGHT = 1
+
+_ASSOCIATIVITY = {
+    '+': Associativity.LEFT,
+    '-': Associativity.LEFT,
+    '*': Associativity.LEFT,
+    '/': Associativity.LEFT,
+}
+
 _PRECEDENCE = {
     '+': 1,
     '-': 1,
     '*': 2,
     '/': 2,
+    # The shunting yard algorithm checks whether the top token has a greater
+    # precedence. A left parentheses isn't an operator but can appear on the
+    # operator stack and must therefor be compareable with operators.
     '(': 0,
 }
 
@@ -48,7 +63,7 @@ class Parser:
         self.operands.append(ExprInteger(node.value, node.offset))
         return True
 
-    def parse_special(self):
+    def parse_operator(self):
         node = self._lexer.next_special()
         if node is None: return False
 
@@ -58,9 +73,12 @@ class Parser:
             while len(self.operators) > 0 and self.operators[-1].value != '(':
                 self.apply()
             self.operators.pop()
+        elif _ASSOCIATIVITY[node.value] == Associativity.LEFT:
+            if len(self.operators) > 0 and _PRECEDENCE[self.operators[-1].value] >= _PRECEDENCE[node.value]:
+                self.apply()
+            self.operators.append(node)
         else:
-            if len(self.operators) > 0 \
-           and _PRECEDENCE[self.operators[-1].value] > _PRECEDENCE[node.value]:
+            if len(self.operators) > 0 and _PRECEDENCE[self.operators[-1].value] > _PRECEDENCE[node.value]:
                 self.apply()
             self.operators.append(node)
 
@@ -71,7 +89,7 @@ def parse(input_):
     parser = Parser(lexer)
 
     while lexer.has_more_input:
-        if not (lexer.skip_whitespace() or parser.parse_integer() or parser.parse_special()):
+        if not (lexer.skip_whitespace() or parser.parse_integer() or parser.parse_operator()):
             raise SyntaxError
 
     while len(parser.operators) > 0:

@@ -1,7 +1,13 @@
-import typing
-
 from enum import Enum
 from dataclasses import dataclass
+
+class LexerError(Exception):
+    def __init__(self, offset, message):
+        self.offset = offset
+        self.message = message
+
+    def __str__(self):
+        return f"{self.message} at offset {self.offset}"
 
 class Tokens(Enum):
     INTEGER = 0
@@ -11,7 +17,7 @@ class Tokens(Enum):
 class Token:
     offset: int
     type: Tokens
-    value: typing.Any
+    value: str
 
 class Lexer:
     def __init__(self, input_):
@@ -21,7 +27,7 @@ class Lexer:
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self) -> Token:
         # In Python 3.8 this could be an assignment expression.
         node = self._next_integer()
         if node is not None:
@@ -36,38 +42,37 @@ class Lexer:
             return self.__next__()
 
         if self._has_more:
-            raise Exception('syntax error')
+            raise LexerError(self._cursor, 'syntax error')
 
         raise StopIteration
 
     @property
-    def _has_more(self):
+    def _has_more(self) -> bool:
         return self._cursor < len(self._input)
 
     @property
-    def _ahead(self):
+    def _ahead(self) -> str:
         return self._input[self._cursor]
 
-    def _consume(self):
+    def _consume(self) -> str:
         char = self._ahead
         self._cursor += 1
 
         return char
 
-    def _next_integer(self):
+    def _next_integer(self) -> Token:
         token = Token(self._cursor, Tokens.INTEGER, None)
 
         if self._has_more and self._ahead in '123456789':
-            matched = self._consume()
+            token.value = self._consume()
 
             while self._has_more and self._ahead in '0123456789':
-                matched += self._consume()
+                token.value += self._consume()
 
-            token.value = int(matched)
             return token
         return None
 
-    def _next_special(self):
+    def _next_special(self) -> Token:
         token = Token(self._cursor, Tokens.SPECIAL, None)
 
         if self._has_more and self._ahead in '+-*/()':
@@ -75,7 +80,7 @@ class Lexer:
             return token
         return None
 
-    def _skip_whitespace(self):
+    def _skip_whitespace(self) -> bool:
         begin = self._cursor
         while self._has_more and self._ahead in ' \t\n':
             self._cursor += 1

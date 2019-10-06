@@ -1,13 +1,16 @@
-import ast
-import lexer
+from . import nodes, lexer
 
-class ParserError:
+class ParserError(Exception):
     def __init__(self, token, message):
         self.token = token
         self.message = message
 
+    @property
+    def offset(self):
+        return self.token.offset
+
     def __str__(self):
-        return f"{self.message} while parsing {self.token}"
+        return f"{self.message} at offset {self.offset}"
 
 class Parser:
     def __init__(self, input_):
@@ -15,6 +18,7 @@ class Parser:
         self._lexer = lexer.Lexer(input_)
         self._ahead = None
 
+    @property
     def _has_more(self) -> bool:
         try:
             self._peek()
@@ -36,7 +40,7 @@ class Parser:
         self._ahead = None
         return token
 
-    def parse_expr(self) -> ast.Expr:
+    def parse_expr(self) -> nodes.Expr:
         exprparser = ExprParser()
 
         while self._has_more:
@@ -71,30 +75,30 @@ class ExprParser:
         rhs = self._operands.pop()
         lhs = self._operands.pop()
 
-        self._operands.append(ast.ExprBinary(operator.offset, operator.value, lhs, rhs))
+        self._operands.append(nodes.ExprBinary(operator.offset, operator.value, lhs, rhs))
 
     @property
     def _top(self):
-        return self._operators[-1].value
+        return self._operators[-1]
 
     def _process_arithmetic(self, token):
-        while len(self._operators) > 0 and PRECEDENCE[self._top] >= PRECEDENCE[token.value]:
+        while len(self._operators) > 0 and PRECEDENCE[self._top.value] >= PRECEDENCE[token.value]:
             self._apply()
 
         self._operators.append(token)
 
     def process(self, token) -> bool:
         if token.type == lexer.Tokens.INTEGER:
-            self._operands.append(ast.ExprInteger(token.offset, int(token.value)))
+            self._operands.append(nodes.ExprInteger(token.offset, int(token.value)))
             return True
         elif token.type == lexer.Tokens.SPECIAL and token.value in list('+-*/()'):
             if token.value == '(':
                 self._operators.append(token)
             elif token.value == ')':
-                while len(self._operators) > 0 and self._top != '(':
+                while len(self._operators) > 0 and self._top.value != '(':
                     self._apply()
 
-                if len(self._operators) > 0 and self._top == '(':
+                if len(self._operators) > 0 and self._top.value == '(':
                     self._operators.pop()
                 else:
                     raise ParserError(token, 'mismatched parentheses')
@@ -104,8 +108,10 @@ class ExprParser:
 
         return False
 
-    def finalize(self) -> ast.Expr:
+    def finalize(self) -> nodes.Expr:
         while len(self._operators) > 0:
+            if self._top.value == '(':
+                raise ParserError(self._top, 'mismatched parentheses')
             self._apply()
 
         if len(self._operands) == 0:
@@ -115,6 +121,3 @@ class ExprParser:
             return self._operands[0]
 
         raise ParserError(self._last_processed_token, 'invalid expression')
-
-parser = Parser('(20 + 1) * 2')
-print(parser.parse_expr())

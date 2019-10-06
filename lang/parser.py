@@ -85,6 +85,7 @@ class ExprParser:
         return self._operators[-1]
 
     def _process_arithmetic(self, token):
+        # Notice: `>=` causes all operators to be left associative.
         while len(self._operators) > 0 and PRECEDENCE[self._top.value] >= PRECEDENCE[token.value]:
             self._apply()
 

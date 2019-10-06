@@ -1,25 +1,7 @@
-#!/usr/bin/env python
-
 from enum import Enum
 from dataclasses import dataclass
 
 from .lexer import Lexer
-
-@dataclass
-class Expr:
-    pass
-
-@dataclass
-class ExprInteger(Expr):
-    value: int
-    offset: int
-
-@dataclass
-class ExprBinary(Expr):
-    lhs: Expr
-    rhs: Expr
-    op: str
-    offset: int
 
 class Associativity(Enum):
     LEFT = 0

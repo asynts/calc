@@ -2,4 +2,4 @@
 
 import lang
 
-print( lang.exprparser.parse('(20+1)*2/4') )
+print( lang.exprparser.parse('1 + 2 + 3') )

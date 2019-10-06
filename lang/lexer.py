@@ -43,3 +43,11 @@ class Lexer:
             # Notice: Python evaluates function arguments from left to right.
             return Token(offset=self._cursor, value=self.next())
         return None
+
+    def skip_whitespace(self):
+        has_matched = False
+        while self.has_more_input and self.peek() in ' \t\n':
+            self._cursor += 1
+            has_matched = True
+
+        return has_matched

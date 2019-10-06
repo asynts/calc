@@ -29,8 +29,8 @@ _PRECEDENCE = {
 }
 
 class Parser:
-    def __init__(self, lexer_):
-        self._lexer = lexer_
+    def __init__(self, lexer):
+        self._lexer = lexer
         self.operands = []
         self.operators = []
 
@@ -67,11 +67,11 @@ class Parser:
         return True
 
 def parse(input_):
-    lexer_ = Lexer(input_)
-    parser = Parser(lexer_)
+    lexer = Lexer(input_)
+    parser = Parser(lexer)
 
-    while lexer_.has_more_input:
-        if not (parser.parse_integer() or parser.parse_special()):
+    while lexer.has_more_input:
+        if not (lexer.skip_whitespace() or parser.parse_integer() or parser.parse_special()):
             raise SyntaxError
 
     while len(parser.operators) > 0:

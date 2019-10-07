@@ -21,12 +21,11 @@ class Parser:
     @property
     def _has_more(self) -> bool:
         try:
-            self._peek()
-            return True
+            return self.peek().type != lexer.Tokens.EOF
         except StopIteration:
             return False
 
-    def _peek(self) -> lexer.Token:
+    def peek(self) -> lexer.Token:
         if self._ahead is None:
             self._ahead = next(self._lexer)
 
@@ -44,10 +43,10 @@ class Parser:
         if not self._has_more:
             return None
 
-        exprparser = ExprParser(self._peek())
+        exprparser = ExprParser(self)
 
         while self._has_more:
-            if exprparser.process(self._peek()):
+            if exprparser.process(self.peek()):
                 self._consume()
 
         return exprparser.finalize()
@@ -64,8 +63,8 @@ PRECEDENCE = {
 }
 
 class ExprParser:
-    def __init__(self, begin):
-        self._begin = begin
+    def __init__(self, parser):
+        self._parser = parser
         self._operands = []
         self._operators = []
 
@@ -124,4 +123,4 @@ class ExprParser:
         if len(self._operands) == 1:
             return self._operands[0]
 
-        raise ParserError(self._begin, 'invalid expression')
+        raise ParserError(self._parser.peek(), 'invalid expression')

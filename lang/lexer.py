@@ -10,8 +10,9 @@ class LexerError(Exception):
         return f"{self.message} at offset {self.offset}"
 
 class Tokens(Enum):
-    INTEGER = 0
-    SPECIAL = 1
+    EOF = 0
+    INTEGER = 1
+    SPECIAL = 2
 
 @dataclass
 class Token:
@@ -44,7 +45,7 @@ class Lexer:
         if self._has_more:
             raise LexerError(self._cursor, 'syntax error')
 
-        raise StopIteration
+        return Token(len(self._input), Tokens.EOF, '<EOF>')
 
     @property
     def _has_more(self) -> bool:

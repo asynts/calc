@@ -2,7 +2,7 @@
 
 import lang
 
-input_ = '1 1 + (2 + 3)'
+input_ = '1 2'
 
 parser = lang.parser.Parser(input_)
 

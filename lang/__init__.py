@@ -14,14 +14,16 @@ The star '*' operator is greedy.
         / IDENTIFIER
         ;
 """
+from . import parser
 
 """
-This grammar accepts an input if and only if it would be accepted by the previous parser.
+Rules are matched from left to right.
+The first alternative takes precedence if there is a conflict.
 The star '*' operator is greedy.
 
-<expr> ::= <term> INFIX <term> ;
+<expr> ::= <term> (INFIX <term>)* ;
 
-<term> :: = PREFIX* <expr> POSTFIX* ;
+<term> :: = PREFIX* <operand> POSTFIX* ;
 
 <operand> ::= '(' <expr> ')'
            / INTEGER
@@ -31,3 +33,4 @@ The star '*' operator is greedy.
 
 <args> ::= <expr> (',' <expr>)* ;
 """
+from . import lexer

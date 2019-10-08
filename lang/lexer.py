@@ -166,3 +166,80 @@ class Lexer:
                 raise LexerError
         
         return True
+
+@dataclass
+class Expr:
+    offset: int
+
+@dataclass
+class ExprInteger(Expr):
+    offset: int
+    value: int
+
+@dataclass
+class ExprVariable(Expr):
+    offset: int
+    name: str
+
+@dataclass
+class ExprBinary(Expr):
+    offset: int
+    operator: str
+    lhs: Expr
+    rhs: Expr
+
+class Parser:
+    def __init__(self, tokens):
+        self.tokens = tokens[:]
+        self.operands = []
+        self.operators = []
+    
+    @property
+    def top(self) -> Token:
+        return self.operators[-1]
+    
+    def apply(self, token: Token):
+        assert token.category == Category.INFIX # TODO
+
+        self.operands.append(ExprBinary(
+            offset=token.offset,
+            operator=token.value,
+            rhs=self.operands.pop(),
+            lhs=self.operands.pop()
+        ))
+
+def parse(input_: str):
+    lexer = Lexer(input_)
+    assert lexer._lex_expression()
+
+    parser = Parser(lexer._output)
+
+    while len(parser.tokens):
+        token = parser.tokens.pop(0)
+
+        if token.category == Category.INTEGER:
+            parser.operands.append(ExprInteger(offset=token.offset, value=int(token.value)))
+            continue
+
+        if token.category == Category.VARIABLE:
+            parser.operands.append(ExprVariable(offset=token.offset, name=token.value))
+            continue
+
+        if token.category == Category.OPEN:
+            parser.operators.append(token)
+            continue
+
+        if token.category == Category.CLOSE:
+            while parser.top.category != Category.OPEN:
+                parser.apply(parser.operators.pop())
+
+            parser.operators.pop()
+            continue
+    
+        raise NotImplementedError
+    
+    while len(parser.operators) > 0:
+        parser.apply(parser.operators.pop())
+
+    assert len(parser.operands) == 1
+    return parser.operands[0]

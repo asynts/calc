@@ -23,11 +23,14 @@ class LexerError(Exception):
 class Category(Enum):
     INTEGER = 0
     INVOKE = 1
-    CLOSE = 2
     VARIABLE = 3
 
-    UNARY = 4
-    BINARY = 5
+    OPEN = 7
+    CLOSE = 2
+
+    PREFIX = 4
+    INFIX = 5
+    POSTFIX = 6
 
 @dataclass
 class Token:
@@ -57,6 +60,30 @@ class Lexer:
     _re_integer = re.compile('^[0-9]+')
     _re_identifier = re.compile('^[_a-z0-9]+')
     def _lex_value(self):
+        # rule: '(' <expression> ')'
+        token = Token(
+            offset=self._cursor,
+            category=Category.OPEN,
+            value=self._match('(')
+        )
+        if token.value:
+            self._output.append(token)
+
+            if not self._lex_expression():
+                raise LexerError
+
+            token = Token(
+                offset=self._cursor,
+                category=Category.CLOSE,
+                value=self._match(')')
+            )
+            if token.value:
+                self._output.append(token)
+                return True
+            else:
+                raise LexerError
+
+        # rule: INTEGER
         token = Token(
             offset=self._cursor,
             category=Category.INTEGER,
@@ -66,9 +93,11 @@ class Lexer:
             self._output.append(token)
             return True
 
+        # rule: IDENTIFIER '(' <arguments> ')' / IDENTIFIER
         token = Token(
             offset=self._cursor,
-            value=self._regex(self._re_identifier)
+            value=self._regex(self._re_identifier),
+            category=None
         )
         if token.value:
             if self._match('('):
@@ -91,10 +120,13 @@ class Lexer:
             else:                
                 token.category = Category.VARIABLE
                 self._output.append(token)
-
                 return True
+
         
         return False
 
     def _lex_arguments(self):
+        pass
+
+    def _lex_expression(self):
         pass

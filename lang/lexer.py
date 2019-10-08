@@ -23,15 +23,15 @@ class LexerError(Exception):
 class Category(Enum):
     INTEGER = 0
     INVOKE = 1
-    VARIABLE = 3
+    VARIABLE = 2
 
-    OPEN = 7
-    CLOSE = 2
-    COMMA = 8
+    OPEN = 3
+    CLOSE = 4
+    COMMA = 5
 
-    PREFIX = 4
-    INFIX = 5
-    POSTFIX = 6
+    PREFIX = 6
+    INFIX = 7
+    POSTFIX = 8
 
 @dataclass
 class Token:
@@ -61,8 +61,9 @@ class Lexer:
 
         if self._input[self._cursor:].startswith(string):
             self._cursor += len(string)
-            return token
-        return None
+            self._output.append(token)
+            return True
+        return False
 
     def _regex(self, regex: re.Pattern, category: Category):
         match = regex.match(self._input[self._cursor:])
@@ -74,55 +75,42 @@ class Lexer:
             )
 
             self._cursor += len(match.group(0))
-            return token
-        return None
+            self._output.append(token)
+            return True
+        return False
 
     _re_integer = re.compile('^[0-9]+')
     _re_identifier = re.compile('^[_a-z0-9]+')
     def _lex_value(self):
         # rule: '(' <expression> ')'
-        token = self._match('(', Category.OPEN)
-        if token:
-            self._output.append(token)
-
+        if self._match('(', Category.OPEN):
             if not self._lex_expression():
                 raise LexerError
 
-            token = self._match(')', Category.CLOSE)
-            if token:
-                self._output.append(token)
+            if self._match(')', Category.CLOSE):
                 return True
             else:
                 raise LexerError
 
         # rule: INTEGER
-        token = self._regex(self._re_integer, Category.INTEGER)
-        if token:
-            self._output.append(token)
+        if self._regex(self._re_integer, Category.INTEGER):
             return True
 
         # rule: IDENTIFIER '(' <arguments>? ')' / IDENTIFIER
-        token = self._regex(self._re_identifier, None)
-        if token:
-            if self._match('(', None):
-                token.category = Category.INVOKE
-                self._output.append(token)
+        if self._regex(self._re_identifier, None):
+            if self._match('(', Category.OPEN):
+                self._output.pop()
+                self._output[-1].category = Category.INVOKE
 
                 self._lex_arguments()
 
-                token = self._match(')', Category.CLOSE)
-                if token:
-                    self._output.append(token)
+                if self._match(')', Category.CLOSE):
+                    return True
                 else:
                     raise LexerError
-
+            else:
+                self._output[-1].category = Category.VARIABLE
                 return True
-            else:                
-                token.category = Category.VARIABLE
-                self._output.append(token)
-                return True
-            raise LexerError
-
         
         return False
     
@@ -143,25 +131,19 @@ class Lexer:
 
     def _lex_prefix(self):
         for op in ['++', '--', '-']:
-            token = self._match(op, Category.PREFIX)
-            if token:
-                self._output.append(token)
+            if self._match(op, Category.PREFIX):
                 return True
         return False
 
     def _lex_infix(self):
         for op in '+-*/':
-            token = self._match(op, Category.INFIX)
-            if token:
-                self._output.append(token)
+            if self._match(op, Category.INFIX):
                 return True
         return False
 
     def _lex_postfix(self):
         for op in ['++', '--']:
-            token = self._match(op, Category.POSTFIX)
-            if token:
-                self._output.append(token)
+            if self._match(op, Category.POSTFIX):
                 return True
         return False
 
@@ -169,14 +151,9 @@ class Lexer:
         if not self._lex_expression():
             return False
 
-        token = self._match(',', Category.COMMA)
-        while token:
-            self._output.append(token)
-
+        while self._match(',', Category.COMMA):
             if not self._lex_expression():
                 raise LexerError
-
-            token = self._match(',', Category.COMMA)
         
         return True
 

@@ -27,6 +27,7 @@ class Category(Enum):
 
     OPEN = 7
     CLOSE = 2
+    COMMA = 8
 
     PREFIX = 4
     INFIX = 5
@@ -149,7 +150,12 @@ class Lexer:
         return False
 
     def _lex_infix(self):
-        pass
+        for op in '+-*/':
+            token = self._match(op, Category.INFIX)
+            if token:
+                self._output.append(token)
+                return True
+        return False
 
     def _lex_postfix(self):
         for op in ['++', '--']:
@@ -160,7 +166,26 @@ class Lexer:
         return False
 
     def _lex_arguments(self):
-        pass
+        if not self._lex_expression():
+            return False
+
+        token = self._match(',', Category.COMMA)
+        while token:
+            self._output.append(token)
+
+            if not self._lex_expression():
+                raise LexerError
+
+            token = self._match(',', Category.COMMA)
+        
+        return True
 
     def _lex_expression(self):
-        pass
+        if not self._lex_term():
+            return False
+
+        while self._lex_infix():
+            if not self._lex_term():
+                raise LexerError
+        
+        return True

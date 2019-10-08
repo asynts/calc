@@ -44,74 +44,66 @@ class Lexer:
         self._cursor = 0
         self._output = []
 
-    def _match(self, string: str):
+    def _match(self, string: str, category: Category):
+        token = Token(
+            offset=self._cursor,
+            category=category,
+            value=string
+        )
+
         if self._input[self._cursor:].startswith(string):
             self._cursor += len(string)
-            return string
+            return token
         return None
 
-    def _regex(self, regex: re.Pattern):
+    def _regex(self, regex: re.Pattern, category: Category):
         match = regex.match(self._input[self._cursor:])
         if match:
+            token = Token(
+                offset=self._cursor,
+                category=category,
+                value=match.group(0)
+            )
+
             self._cursor += len(match.group(0))
-            return match.group(0)
+            return token
         return None
 
     _re_integer = re.compile('^[0-9]+')
     _re_identifier = re.compile('^[_a-z0-9]+')
     def _lex_value(self):
         # rule: '(' <expression> ')'
-        token = Token(
-            offset=self._cursor,
-            category=Category.OPEN,
-            value=self._match('(')
-        )
-        if token.value:
+        token = self._match('(', Category.OPEN)
+        if token:
             self._output.append(token)
 
             if not self._lex_expression():
                 raise LexerError
 
-            token = Token(
-                offset=self._cursor,
-                category=Category.CLOSE,
-                value=self._match(')')
-            )
-            if token.value:
+            token = self._match(')', Category.CLOSE)
+            if token:
                 self._output.append(token)
                 return True
             else:
                 raise LexerError
 
         # rule: INTEGER
-        token = Token(
-            offset=self._cursor,
-            category=Category.INTEGER,
-            value=self._regex(self._re_integer)
-        )
-        if token.value:
+        token = self._regex(self._re_integer, Category.INTEGER)
+        if token:
             self._output.append(token)
             return True
 
         # rule: IDENTIFIER '(' <arguments> ')' / IDENTIFIER
-        token = Token(
-            offset=self._cursor,
-            value=self._regex(self._re_identifier),
-            category=None
-        )
-        if token.value:
-            if self._match('('):
+        token = self._regex(self._re_identifier, None)
+        if token:
+            if self._match('(', None):
                 token.category = Category.INVOKE
                 self._output.append(token)
 
                 self._lex_arguments()
 
-                token = Token(
-                    offset=self._cursor,
-                    category=Category.CLOSE,
-                    value=self._match(')'),
-                )
-                if token.value:
+                token = self._match(')', Category.CLOSE)
+                if token:
                     self._output.append(token)
                 else:
                     raise LexerError

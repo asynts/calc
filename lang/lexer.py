@@ -1,15 +1,15 @@
 """
-<expr> ::= <term> (INFIX <term>)* ;
+<expression> ::= <term> (INFIX <term>)* ;
 
 <term> :: = PREFIX* <value> POSTFIX* ;
 
-<value> ::= '(' <expr> ')'
+<value> ::= '(' <expression> ')'
          / INTEGER
-         / IDENTIFIER '(' <args>? ')'
+         / IDENTIFIER '(' <arguments>? ')'
          / IDENTIFIER
          ;
 
-<args> ::= <expr> (',' <expr>)* ;
+<arguments> ::= <expression> (',' <expression>)* ;
 """
 
 import re, typing
@@ -43,6 +43,13 @@ class Lexer:
         self._input = input_
         self._cursor = 0
         self._output = []
+
+    def _backup(self):
+        return {'cursor': self._cursor, 'output': self._output}
+
+    def _restore(self, backup):
+        self._cursor = backup['cursor']
+        self._output = backup['output']
 
     def _match(self, string: str, category: Category):
         token = Token(
@@ -93,7 +100,7 @@ class Lexer:
             self._output.append(token)
             return True
 
-        # rule: IDENTIFIER '(' <arguments> ')' / IDENTIFIER
+        # rule: IDENTIFIER '(' <arguments>? ')' / IDENTIFIER
         token = self._regex(self._re_identifier, None)
         if token:
             if self._match('(', None):
@@ -113,8 +120,43 @@ class Lexer:
                 token.category = Category.VARIABLE
                 self._output.append(token)
                 return True
+            raise LexerError
 
         
+        return False
+    
+    def _lex_term(self):
+        backup = self._backup()
+
+        while self._lex_prefix():
+            pass
+
+        if not self._lex_value():
+            self._restore(backup)
+            return False
+
+        while self._lex_postfix():
+            pass
+
+        return True
+
+    def _lex_prefix(self):
+        for op in ['++', '--', '-']:
+            token = self._match(op, Category.PREFIX)
+            if token:
+                self._output.append(token)
+                return True
+        return False
+
+    def _lex_infix(self):
+        pass
+
+    def _lex_postfix(self):
+        for op in ['++', '--']:
+            token = self._match(op, Category.POSTFIX)
+            if token:
+                self._output.append(token)
+                return True
         return False
 
     def _lex_arguments(self):

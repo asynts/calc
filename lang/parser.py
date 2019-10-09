@@ -5,25 +5,25 @@ from dataclasses import dataclass
 from .lexer import Category, Token
 
 @dataclass
-class ExprInteger:
+class Expr:
     offset: int
+
+@dataclass
+class ExprInteger(Expr):
     value: int
 
 @dataclass
-class ExprVariable:
-    offset: int
+class ExprVariable(Expr):
     name: str
 
 @dataclass
-class ExprBinary:
-    offset: int
+class ExprBinary(Expr):
     operator: str
     lhs: typing.Any # TODO
     rhs: typing.Any # TODO
 
 @dataclass
-class ExprInvoke:
-    offset: int
+class ExprInvoke(Expr):
     name: str
     arguments: typing.List[typing.Any] # TODO
 

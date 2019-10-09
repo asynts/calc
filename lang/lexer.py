@@ -168,25 +168,35 @@ class Lexer:
         return True
 
 @dataclass
-class Expr:
-    offset: int
-
-@dataclass
-class ExprInteger(Expr):
+class ExprInteger:
     offset: int
     value: int
 
 @dataclass
-class ExprVariable(Expr):
+class ExprVariable:
     offset: int
     name: str
 
 @dataclass
-class ExprBinary(Expr):
+class ExprBinary:
     offset: int
     operator: str
-    lhs: Expr
-    rhs: Expr
+    lhs: typing.Any # TODO
+    rhs: typing.Any # TODO
+
+@dataclass
+class ExprInvoke:
+    offset: int
+    name: str
+    arguments: typing.List[typing.Any] # TODO
+
+PRECEDENCE = {
+    '+': 1,
+    '-': 1,
+    '*': 2,
+    '/': 2,
+    '(': 0, # TODO
+}
 
 class Parser:
     def __init__(self, tokens):
@@ -207,39 +217,59 @@ class Parser:
             rhs=self.operands.pop(),
             lhs=self.operands.pop()
         ))
-
-def parse(input_: str):
-    lexer = Lexer(input_)
-    assert lexer._lex_expression()
-
-    parser = Parser(lexer._output)
-
-    while len(parser.tokens):
-        token = parser.tokens.pop(0)
-
-        if token.category == Category.INTEGER:
-            parser.operands.append(ExprInteger(offset=token.offset, value=int(token.value)))
-            continue
-
-        if token.category == Category.VARIABLE:
-            parser.operands.append(ExprVariable(offset=token.offset, name=token.value))
-            continue
-
-        if token.category == Category.OPEN:
-            parser.operators.append(token)
-            continue
-
-        if token.category == Category.CLOSE:
-            while parser.top.category != Category.OPEN:
-                parser.apply(parser.operators.pop())
-
-            parser.operators.pop()
-            continue
     
-        raise NotImplementedError
-    
-    while len(parser.operators) > 0:
-        parser.apply(parser.operators.pop())
+    def parse_arguments(self):
+        pass # TODO
 
-    assert len(parser.operands) == 1
-    return parser.operands[0]
+    def parse_expression(self):
+        while len(self.tokens):
+            token = self.tokens.pop(0)
+
+            if token.category == Category.INTEGER:
+                self.operands.append(ExprInteger(offset=token.offset, value=int(token.value)))
+                continue
+
+            if token.category == Category.VARIABLE:
+                self.operands.append(ExprVariable(offset=token.offset, name=token.value))
+                continue
+        
+            if token.category == Category.INVOKE:
+                self.operands.append(ExprInvoke(
+                    offset=token.offset,
+                    name=token.value,
+                    arguments=self.parse_arguments()
+                ))
+                continue
+
+            if token.category == Category.OPEN:
+                self.operators.append(token)
+                continue
+
+            if token.category == Category.CLOSE:
+                while self.top.category != Category.OPEN:
+                    self.apply(self.operators.pop())
+
+                self.operators.pop()
+                continue
+
+            if token.category == Category.INFIX:
+                while len(self.operators) > 0 and PRECEDENCE[self.top.value] >= PRECEDENCE[token.value]:
+                    self.apply(self.operators.pop())
+                
+                self.operators.append(token)
+                continue
+        
+            raise NotImplementedError
+        
+        while len(self.operators) > 0:
+            self.apply(self.operators.pop())
+
+        assert len(self.operands) == 1
+        return self.operands[0]
+
+lexer = Lexer('(20+1)*2')
+assert lexer._lex_expression()
+print(lexer._output)
+
+parser = Parser(lexer._output)
+print(parser.parse_expression())

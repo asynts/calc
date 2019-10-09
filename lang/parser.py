@@ -22,11 +22,6 @@ class ExprBinary(Expr):
     lhs: Expr
     rhs: Expr
 
-@dataclass
-class ExprInvoke(Expr):
-    name: str
-    arguments: typing.List[Expr]
-
 PRECEDENCE = {
     '+': 1,
     '-': 1,
@@ -34,6 +29,38 @@ PRECEDENCE = {
     '/': 2,
     '(': 0,
 }
+
+class Parser_:
+    def __init__(self, tokens):
+        self._tokens = tokens
+        self._operands = []
+        self._operators = []
+
+    def _apply(self, operator):
+        pass
+
+    def _parse_arguments(self) -> bool:
+        argument = self.parse()
+        if argument is not None:
+            arguments = [argument]
+
+            token = self._tokens.pop()
+            while token.category == Category.COMMA:
+                arguments.append(self.parse())
+
+            assert token.category == Category.CLOSE
+            return arguments
+        
+        return []
+
+    def _parse_value(self) -> bool:
+        pass
+
+    def _parse_operator(self) -> bool:
+        pass
+
+    def parse(self) -> Expr:
+        pass
 
 class Parser:
     def __init__(self, tokens):
@@ -46,17 +73,15 @@ class Parser:
         return self.operators[-1]
     
     def apply(self, token: Token):
-        assert token.category == Category.INFIX
-
-        self.operands.append(ExprBinary(
-            offset=token.offset,
-            operator=token.value,
-            rhs=self.operands.pop(),
-            lhs=self.operands.pop()
-        ))
-    
-    def parse_arguments(self):
-        pass
+        if token.category == Category.INFIX:
+            self.operands.append(ExprBinary(
+                offset=token.offset,
+                operator=token.value,
+                rhs=self.operands.pop(),
+                lhs=self.operands.pop()
+            ))
+        else:
+            raise NotImplementedError
 
     def parse_expression(self):
         while len(self.tokens):
@@ -71,12 +96,7 @@ class Parser:
                 continue
         
             if token.category == Category.INVOKE:
-                self.operands.append(ExprInvoke(
-                    offset=token.offset,
-                    name=token.value,
-                    arguments=self.parse_arguments()
-                ))
-                continue
+                raise NotImplementedError
 
             if token.category == Category.OPEN:
                 self.operators.append(token)

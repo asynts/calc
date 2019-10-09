@@ -19,20 +19,20 @@ class ExprVariable(Expr):
 @dataclass
 class ExprBinary(Expr):
     operator: str
-    lhs: typing.Any # TODO
-    rhs: typing.Any # TODO
+    lhs: Expr
+    rhs: Expr
 
 @dataclass
 class ExprInvoke(Expr):
     name: str
-    arguments: typing.List[typing.Any] # TODO
+    arguments: typing.List[Expr]
 
 PRECEDENCE = {
     '+': 1,
     '-': 1,
     '*': 2,
     '/': 2,
-    '(': 0, # TODO
+    '(': 0,
 }
 
 class Parser:
@@ -46,7 +46,7 @@ class Parser:
         return self.operators[-1]
     
     def apply(self, token: Token):
-        assert token.category == Category.INFIX # TODO
+        assert token.category == Category.INFIX
 
         self.operands.append(ExprBinary(
             offset=token.offset,
@@ -56,7 +56,7 @@ class Parser:
         ))
     
     def parse_arguments(self):
-        pass # TODO
+        pass
 
     def parse_expression(self):
         while len(self.tokens):
@@ -89,15 +89,21 @@ class Parser:
                 self.operators.pop()
                 continue
 
+            if token.category == Category.PREFIX:       
+                raise NotImplementedError
+
             if token.category == Category.INFIX:
                 while len(self.operators) > 0 and PRECEDENCE[self.top.value] >= PRECEDENCE[token.value]:
                     self.apply(self.operators.pop())
                 
                 self.operators.append(token)
                 continue
-        
-            raise NotImplementedError
-        
+
+            if token.category == Category.POSTFIX:       
+                raise NotImplementedError
+
+            raise ValueError(f'invalid token: {token}')
+
         while len(self.operators) > 0:
             self.apply(self.operators.pop())
 

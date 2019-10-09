@@ -22,6 +22,10 @@ class ExprBinary(Expr):
     lhs: Expr
     rhs: Expr
 
+class ExprInvoke(Expr):
+    name: str
+    args: typing.List[Expr]
+
 PRECEDENCE = {
     '+': 1,
     '-': 1,
@@ -37,95 +41,45 @@ class Parser_:
         self._operators = []
 
     def _apply(self, operator):
-        pass
-
-    def _parse_arguments(self) -> bool:
-        argument = self.parse()
-        if argument is not None:
-            arguments = [argument]
-
-            token = self._tokens.pop()
-            while token.category == Category.COMMA:
-                arguments.append(self.parse())
-
-            assert token.category == Category.CLOSE
-            return arguments
-        
-        return []
-
-    def _parse_value(self) -> bool:
-        pass
-
-    def _parse_operator(self) -> bool:
-        pass
-
-    def parse(self) -> Expr:
-        pass
-
-class Parser:
-    def __init__(self, tokens):
-        self.tokens = tokens[:]
-        self.operands = []
-        self.operators = []
-    
-    @property
-    def top(self) -> Token:
-        return self.operators[-1]
-    
-    def apply(self, token: Token):
-        if token.category == Category.INFIX:
-            self.operands.append(ExprBinary(
-                offset=token.offset,
-                operator=token.value,
-                rhs=self.operands.pop(),
-                lhs=self.operands.pop()
+        if operator.category == Category.PREFIX:
+            raise NotImplementedError
+        elif operator.category == Category.INFIX:
+            self._operands.append(ExprBinary(
+                offset=operator.offset,
+                operator=operator.value,
+                rhs=self._operands.pop(),
+                lhs=self._operands.pop()
             ))
         else:
+            assert operator.category == Category.POSTFIX
             raise NotImplementedError
 
-    def parse_expression(self):
-        while len(self.tokens):
-            token = self.tokens.pop(0)
+    def _parse_expression(self) -> Expr:
+        while len(self._tokens > 0):
+            token = self._tokens.pop(0)
 
             if token.category == Category.INTEGER:
-                self.operands.append(ExprInteger(offset=token.offset, value=int(token.value)))
-                continue
+                self._operands.append(ExprInteger(
+                    offset=token.offset,
+                    value=int(token.value)
+                ))
+                return True
 
             if token.category == Category.VARIABLE:
-                self.operands.append(ExprVariable(offset=token.offset, name=token.value))
-                continue
-        
+                self._operands.append(ExprVariable(
+                    offset=token.offset,
+                    name=token.value
+                ))
+                return True
+
             if token.category == Category.INVOKE:
-                raise NotImplementedError
+                # When the parser encounters a `Category.CLOSE` token it backtracks and searches for a
+                # `Category.INVOKE` operator. When this operator is found, a `ExprInvoke` node will be constructed.
+                self._operators.append(token)
 
-            if token.category == Category.OPEN:
-                self.operators.append(token)
-                continue
-
-            if token.category == Category.CLOSE:
-                while self.top.category != Category.OPEN:
-                    self.apply(self.operators.pop())
-
-                self.operators.pop()
-                continue
-
-            if token.category == Category.PREFIX:       
-                raise NotImplementedError
-
-            if token.category == Category.INFIX:
-                while len(self.operators) > 0 and PRECEDENCE[self.top.value] >= PRECEDENCE[token.value]:
-                    self.apply(self.operators.pop())
-                
-                self.operators.append(token)
-                continue
-
-            if token.category == Category.POSTFIX:       
-                raise NotImplementedError
-
-            raise ValueError(f'invalid token: {token}')
-
-        while len(self.operators) > 0:
-            self.apply(self.operators.pop())
-
-        assert len(self.operands) == 1
-        return self.operands[0]
+                while self._parse_expression():
+                    self._operators.append(self._tokens.pop(0))
+                    assert self._operators[-1].category == Category.COMMA
+                return True
+            
+            # TODO

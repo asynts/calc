@@ -5,11 +5,8 @@
 
 <value> ::= '(' <expression> ')'
          / INTEGER
-         / IDENTIFIER '(' <arguments>? ')'
          / IDENTIFIER
          ;
-
-<arguments> ::= <expression> (',' <expression>)* ;
 """
 
 import re, typing
@@ -22,7 +19,6 @@ class LexerError(Exception):
 
 class Category(Enum):
     INTEGER = 0
-    INVOKE = 1
     VARIABLE = 2
 
     OPEN = 3
@@ -37,13 +33,17 @@ class Category(Enum):
 class Token:
     offset: int
     category: Category
-    value: typing.Any
+    value: str
 
 class Lexer:
     def __init__(self, input_: str):
         self._input = input_
         self._cursor = 0
         self._output = []
+
+    @property
+    def has_more(self):
+        return self._cursor < len(self._input)
 
     def _backup(self):
         return {'cursor': self._cursor, 'output': self._output}
@@ -84,7 +84,7 @@ class Lexer:
     def _lex_value(self):
         # rule: '(' <expression> ')'
         if self._match('(', Category.OPEN):
-            if not self._lex_expression():
+            if not self.lex_expression():
                 raise LexerError
 
             if self._match(')', Category.CLOSE):
@@ -96,21 +96,9 @@ class Lexer:
         if self._regex(self._re_integer, Category.INTEGER):
             return True
 
-        # rule: IDENTIFIER '(' <arguments>? ')' / IDENTIFIER
-        if self._regex(self._re_identifier, None):
-            if self._match('(', Category.OPEN):
-                self._output.pop()
-                self._output[-1].category = Category.INVOKE
-
-                self._lex_arguments()
-
-                if self._match(')', Category.CLOSE):
-                    return True
-                else:
-                    raise LexerError
-            else:
-                self._output[-1].category = Category.VARIABLE
-                return True
+        # rule: IDENTIFIER
+        if self._regex(self._re_identifier, Category.VARIABLE):
+            return True
         
         return False
     
@@ -147,17 +135,7 @@ class Lexer:
                 return True
         return False
 
-    def _lex_arguments(self):
-        if not self._lex_expression():
-            return False
-
-        while self._match(',', Category.COMMA):
-            if not self._lex_expression():
-                raise LexerError
-        
-        return True
-
-    def _lex_expression(self):
+    def lex_expression(self):
         if not self._lex_term():
             return False
 
@@ -166,3 +144,13 @@ class Lexer:
                 raise LexerError
         
         return True
+
+def lex(input_: str) -> typing.List[Token]:
+    lexer = Lexer(input_)
+    if not lexer.lex_expression():
+        return None
+    
+    if lexer.has_more:
+        raise LexerError
+
+    return lexer._output

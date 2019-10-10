@@ -22,10 +22,6 @@ class ExprBinary(Expr):
     lhs: Expr
     rhs: Expr
 
-class ExprInvoke(Expr):
-    name: str
-    args: typing.List[Expr]
-
 PRECEDENCE = {
     '+': 1,
     '-': 1,
@@ -34,7 +30,7 @@ PRECEDENCE = {
     '(': 0,
 }
 
-class Parser_:
+class Parser:
     def __init__(self, tokens):
         self._tokens = tokens
         self._operands = []
@@ -63,23 +59,34 @@ class Parser_:
                     offset=token.offset,
                     value=int(token.value)
                 ))
-                return True
+                continue
 
             if token.category == Category.VARIABLE:
                 self._operands.append(ExprVariable(
                     offset=token.offset,
                     name=token.value
                 ))
-                return True
-
-            if token.category == Category.INVOKE:
-                # When the parser encounters a `Category.CLOSE` token it backtracks and searches for a
-                # `Category.INVOKE` operator. When this operator is found, a `ExprInvoke` node will be constructed.
-                self._operators.append(token)
-
-                while self._parse_expression():
-                    self._operators.append(self._tokens.pop(0))
-                    assert self._operators[-1].category == Category.COMMA
-                return True
+                continue
             
-            # TODO
+            if token.category == Category.OPEN:
+                self._operators.append(token)
+                continue
+
+            if token.category == Category.CLOSE:
+                while self._operators[-1].category != Category.OPEN:
+                    self._apply(self._operators.pop())
+
+                self._operators.pop()
+                continue
+
+            if token.category == Category.INFIX:
+                while PRECEDENCE[self._operators[-1].value] >= PRECEDENCE[token.value]:
+                    self._apply(self._operators.pop())
+                
+                self._operators.append(token)
+                continue
+
+            if token.category in [Category.PREFIX, Category.POSTFIX]:
+                raise NotImplementedError
+
+            raise AssertionError

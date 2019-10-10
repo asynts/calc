@@ -1,7 +1,7 @@
 """
-<expression> ::= <term> (INFIX <term>)* ;
+<expression> ::= WS? <term> WS? (INFIX <term> WS?)* ;
 
-<term> :: = PREFIX* <value> POSTFIX* ;
+<term> :: = PREFIX* WS? <value> WS? POSTFIX* ;
 
 <value> ::= '(' <expression> ')'
          / INTEGER
@@ -108,9 +108,13 @@ class Lexer:
         while self._lex_prefix():
             pass
 
+        self._lex_whitespace()
+
         if not self._lex_value():
             self._restore(backup)
             return False
+
+        self._lex_whitespace()
 
         while self._lex_postfix():
             pass
@@ -124,7 +128,7 @@ class Lexer:
         return False
 
     def _lex_infix(self):
-        for op in '+-*/':
+        for op in '+-*/=':
             if self._match(op, Category.INFIX):
                 return True
         return False
@@ -134,14 +138,26 @@ class Lexer:
             if self._match(op, Category.POSTFIX):
                 return True
         return False
+    
+    _re_whitespace = re.compile('^[ \t]+')
+    def _lex_whitespace(self):
+        if self._regex(self._re_whitespace, None):
+            self._output.pop()
+            return True
+        return False
 
     def lex_expression(self):
+        self._lex_whitespace()
+
         if not self._lex_term():
             return False
+
+        self._lex_whitespace()
 
         while self._lex_infix():
             if not self._lex_term():
                 raise LexerError
+            self._lex_whitespace()
         
         return True
 
@@ -149,7 +165,7 @@ def lex(input_: str) -> typing.List[Token]:
     lexer = Lexer(input_)
     if not lexer.lex_expression():
         return None
-    
+
     if lexer.has_more:
         raise LexerError
 

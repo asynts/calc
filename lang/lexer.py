@@ -84,7 +84,7 @@ class Lexer:
     def _lex_value(self):
         # rule: '(' <expression> ')'
         if self._match('(', Category.OPEN):
-            if not self.lex_expression():
+            if not self._lex_expression():
                 raise LexerError
 
             if self._match(')', Category.CLOSE):
@@ -146,7 +146,7 @@ class Lexer:
             return True
         return False
 
-    def lex_expression(self):
+    def _lex_expression(self):
         self._lex_whitespace()
 
         if not self._lex_term():
@@ -161,12 +161,18 @@ class Lexer:
         
         return True
 
+    def lex(self):
+        return self._lex_expression()
+    
+    def finalize(self):
+        if self.has_more:
+            raise LexerError
+
+        return self._output
+
 def lex(input_: str) -> typing.List[Token]:
     lexer = Lexer(input_)
-    if not lexer.lex_expression():
+    if not lexer.lex():
         return None
 
-    if lexer.has_more:
-        raise LexerError
-
-    return lexer._output
+    return lexer.finalize()

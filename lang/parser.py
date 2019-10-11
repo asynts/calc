@@ -80,7 +80,7 @@ class Parser:
 
         return False
 
-    def _parse_operator(self) -> Token:
+    def _parse_operator(self):
         if self._ahead.category == Category.INFIX:
             while len(self._operators) > 0 and PRECEDENCE[self._operators[-1].value] >= PRECEDENCE[self._ahead.value]:
                 self._apply(self._operators.pop())
@@ -88,4 +88,23 @@ class Parser:
             self._cursor += 1
             return True
         
+        return False
+
+    def _parse_parentheses(self):
+        if self._ahead.category == Category.OPEN:
+            self._operators.append(self._ahead)
+            self._cursor += 1
+            return True
+        
+        if self._ahead.category == Category.CLOSE:
+            self._cursor += 1
+
+            while len(self._operators) > 0 and self._operators[-1].category != Category.OPEN:
+                self._apply(self._operators.pop())
+
+            assert self._operators[-1].category == Category.OPEN
+            self._operators.pop()
+            
+            return True
+           
         return False

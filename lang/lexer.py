@@ -5,8 +5,11 @@
 
 <value> ::= '(' <expression> ')'
          / INTEGER
+         / IDENTIFIER '(' <arguments>? ')'
          / IDENTIFIER
          ;
+
+<arguments> ::= <expression> (',' <expression>)* ;
 """
 
 import re, typing
@@ -20,6 +23,7 @@ class LexerError(Exception):
 class Category(Enum):
     INTEGER = 0
     VARIABLE = 2
+    INVOKE = 9
 
     OPEN = 3
     CLOSE = 4
@@ -46,7 +50,7 @@ class Lexer:
         return self._cursor < len(self._input)
 
     def _backup(self):
-        return {'cursor': self._cursor, 'output': self._output}
+        return { 'cursor': self._cursor, 'output': self._output[:] }
 
     def _restore(self, backup):
         self._cursor = backup['cursor']
@@ -78,10 +82,22 @@ class Lexer:
             self._output.append(token)
             return True
         return False
+    
+    def _lex_arguments(self):
+        if not self._lex_expression():
+            return False
+        
+        while self._match(',', Category.COMMA):
+            if not self._lex_expression():
+                raise LexerError
+        
+        return True
 
     _re_integer = re.compile('^[0-9]+')
     _re_identifier = re.compile('^[_a-z0-9]+')
     def _lex_value(self):
+        backup = self._backup()
+
         # rule: '(' <expression> ')'
         if self._match('(', Category.OPEN):
             if not self._lex_expression():
@@ -95,6 +111,18 @@ class Lexer:
         # rule: INTEGER
         if self._regex(self._re_integer, Category.INTEGER):
             return True
+
+        # rule: IDENTIFIER '(' <arguments>? ')'
+        if self._regex(self._re_identifier, Category.INVOKE):
+            if self._match('(', Category.OPEN):
+                self._lex_arguments()
+
+                if not self._match(')', Category.CLOSE):
+                    raise LexerError
+
+                return True
+            
+            self._restore(backup)
 
         # rule: IDENTIFIER
         if self._regex(self._re_identifier, Category.VARIABLE):

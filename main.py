@@ -2,6 +2,7 @@
 
 import lang
 
-tokens = lang.lexer.lex('(1 + 2) * 3')
+tokens = lang.lexer.lex('foo( 2 * (1 + twenty) )')
 
-parser = lang.parser.Parser(tokens)
+for token in tokens:
+    print(f"{token.category.name}: '{token.value}'")

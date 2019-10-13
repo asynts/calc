@@ -14,7 +14,12 @@ class ExprInteger(Expr):
 
 @dataclass
 class ExprBinding(Expr):
-    value: str
+    name: str
+
+@dataclass
+class ExprInvoke(Expr):
+    name: str
+    arguments: typing.List[Expr]
 
 @dataclass
 class ExprBinary(Expr):
@@ -37,6 +42,7 @@ class Parser:
         self._cursor = 0
         self._operands: typing.List[Expr] = []
         self._operators: typing.List[Token] = []
+        self._scope = 0
 
     @property
     def _has_more(self):
@@ -45,6 +51,14 @@ class Parser:
     @property
     def _ahead(self) -> Token:
         return self._tokens[self._cursor]
+    
+    def _backup(self):
+        return { 'cursor': self._cursor, 'operands': self._operands[:], 'operators': self._operators[:] }
+    
+    def _restore(self, backup):
+        self._cursor = backup['cursor']
+        self._operands = backup['operands']
+        self._operators = backup['operators']
 
     def _apply(self, operator: Token):
         if operator.category == Category.INFIX:
@@ -65,6 +79,8 @@ class Parser:
         if not self._has_more:
             return False
 
+        backup = self._backup()
+
         if self._ahead.category == Category.INTEGER:
             self._operands.append(ExprInteger(
                 offset=self._ahead.offset,
@@ -72,11 +88,45 @@ class Parser:
             ))
             self._cursor += 1
             return True
+        
+        if self._ahead.category == Category.INVOKE:
+            node = ExprInvoke(
+                offset=self._ahead.offset,
+                name=self._ahead.value,
+                arguments=[]
+            )
+            self._cursor += 1
+
+            if self._has_more and self._ahead.category == Category.OPEN:
+                self._cursor += 1
+
+                if self._ahead.category == Category.CLOSE:
+                    self._cursor += 1
+                    self._operands.append(node)
+                    return True
+                
+                while True:
+                    subparser = Parser(self._tokens[self._cursor:])
+                    subparser._parse_expression()
+                    self._cursor += subparser._cursor
+
+                    node.arguments.append(subparser._operands.pop())
+
+                    if self._ahead.category == Category.CLOSE:
+                        self._cursor += 1
+                        self._operands.append(node)
+                        return True
+                    
+                    assert self._ahead.category == Category.COMMA
+                    self._cursor += 1
+
+            else:
+                self._restore(backup)
 
         if self._ahead.category == Category.VARIABLE:
             self._operands.append(ExprBinding(
                 offset=self._ahead.offset,
-                value=self._ahead.value
+                name=self._ahead.value
             ))
             self._cursor += 1
             return True
@@ -101,11 +151,13 @@ class Parser:
             return False
 
         if self._ahead.category == Category.OPEN:
+            self._scope += 1
+
             self._operators.append(self._ahead)
             self._cursor += 1
             return True
         
-        if self._ahead.category == Category.CLOSE:
+        if self._ahead.category == Category.CLOSE and self._scope > 0:
             self._cursor += 1
 
             while len(self._operators) > 0 and self._operators[-1].category != Category.OPEN:
@@ -114,6 +166,8 @@ class Parser:
             assert self._operators[-1].category == Category.OPEN
             self._operators.pop()
             
+            self._scope -= 1
+
             return True
            
         return False

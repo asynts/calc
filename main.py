@@ -2,7 +2,7 @@
 
 import lang
 
-tokens = lang.lexer.lex('(20 + 1) * 2')
+tokens = lang.lexer.lex('foo(2 * (20 + 1), 42)')
 
 parser = lang.parser.Parser(tokens)
 print('valid:', parser._parse_expression())

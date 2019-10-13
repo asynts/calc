@@ -62,6 +62,9 @@ class Parser:
         raise AssertionError
 
     def _parse_value(self):
+        if not self._has_more:
+            return False
+
         if self._ahead.category == Category.INTEGER:
             self._operands.append(ExprInteger(
                 offset=self._ahead.offset,
@@ -81,6 +84,9 @@ class Parser:
         return False
 
     def _parse_operator(self):
+        if not self._has_more:
+            return False
+
         if self._ahead.category == Category.INFIX:
             while len(self._operators) > 0 and PRECEDENCE[self._operators[-1].value] >= PRECEDENCE[self._ahead.value]:
                 self._apply(self._operators.pop())
@@ -91,6 +97,9 @@ class Parser:
         return False
 
     def _parse_parentheses(self):
+        if not self._has_more:
+            return False
+
         if self._ahead.category == Category.OPEN:
             self._operators.append(self._ahead)
             self._cursor += 1
@@ -108,3 +117,17 @@ class Parser:
             return True
            
         return False
+
+    def _parse_expression(self):
+        has_matched = False
+        while self._parse_value() or self._parse_parentheses() or self._parse_operator():
+            has_matched = True
+
+        if not has_matched:
+            return False
+
+        while len(self._operators) > 0:
+            self._apply(self._operators.pop())
+    
+        assert len(self._operands) == 1
+        return True

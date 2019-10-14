@@ -17,7 +17,9 @@ import re, typing
 from dataclasses import dataclass
 from enum import Enum
 
-class LexerError(Exception):
+from . import Error
+
+class LexerError(Error):
     pass
 
 class Category(Enum):
@@ -89,7 +91,7 @@ class Lexer:
         
         while self._match(',', Category.COMMA):
             if not self._lex_expression():
-                raise LexerError
+                raise LexerError(self._output[-1].offset, 'expected expression')
         
         return True
 
@@ -100,13 +102,15 @@ class Lexer:
 
         # rule: '(' <expression> ')'
         if self._match('(', Category.OPEN):
+            offset = self._output[-1].offset
+
             if not self._lex_expression():
-                raise LexerError
+                raise LexerError(offset, 'expected expression')
 
             if self._match(')', Category.CLOSE):
                 return True
             else:
-                raise LexerError
+                raise LexerError(offset, 'unclosed parentheses')
 
         # rule: INTEGER
         if self._regex(self._re_integer, Category.INTEGER):
@@ -115,10 +119,12 @@ class Lexer:
         # rule: IDENTIFIER '(' <arguments>? ')'
         if self._regex(self._re_identifier, Category.INVOKE):
             if self._match('(', Category.OPEN):
+                offset = self._output[-1].offset
+
                 self._lex_arguments()
 
                 if not self._match(')', Category.CLOSE):
-                    raise LexerError
+                    raise LexerError(offset, 'unclosed parentheses')
 
                 return True
             
@@ -194,13 +200,12 @@ class Lexer:
     
     def finalize(self):
         if self.has_more:
-            raise LexerError
+            raise LexerError(self._cursor, 'unrecognized input')
 
         return self._output
 
 def lex(input_: str) -> typing.List[Token]:
     lexer = Lexer(input_)
-    if not lexer.lex():
-        return None
+    lexer.lex()
 
     return lexer.finalize()

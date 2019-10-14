@@ -2,7 +2,11 @@ import typing
 
 from dataclasses import dataclass
 
+from . import Error
 from .lexer import Category, Token
+
+class ParserError(Error):
+    pass
 
 @dataclass
 class Expr:
@@ -158,7 +162,7 @@ class Parser:
             self._operators.append(self._ahead)
             self._cursor += 1
             return True
-                
+       
         return False
 
     def _parse_parentheses(self):
@@ -200,3 +204,11 @@ class Parser:
     
         assert len(self._operands) == 1
         return True
+
+def parse(tokens: typing.List[Token]):
+    parser = Parser(tokens)
+
+    if not parser._parse_expression():
+        return None
+    
+    return parser._operands.pop()

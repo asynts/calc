@@ -1,14 +1,26 @@
 #!/usr/bin/env python
 
 import lang
-import graphviz
 
-tokens = lang.lexer.lex('foo = bar = 1 + 2 + 3')
+runtime = lang.runtime.Runtime()
 
-parser = lang.parser.Parser(tokens)
-parser._parse_expression()
+try:
+    while True:
+        input_ = input('> ')
 
-assert len(parser._operands) == 1
-ast = parser._operands.pop()
+        try:
+            tokens = lang.lexer.lex(input_)
+            ast = lang.parser.parse(tokens)
 
-print(graphviz.create_graph(ast))
+            value = runtime.evaluate(ast)
+
+            if value == None:
+                print('<nil>')
+            elif isinstance(value, int):
+                print(f'<integer>: {value}')
+            else:
+                raise NotImplementedError
+        except lang.Error as err:
+            print(f'{err.message} at :{err.offset}')
+except (KeyboardInterrupt, EOFError):
+    print()

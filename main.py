@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
 import lang
+import graphviz
 
-tokens = lang.lexer.lex('foo(2 * (20 + 1), 42)')
+tokens = lang.lexer.lex('42 + foo(2 * (20 + 1))')
 
 parser = lang.parser.Parser(tokens)
-print('valid:', parser._parse_expression())
-print(parser._operands.pop())
+parser._parse_expression()
+
+assert len(parser._operands) == 1
+ast = parser._operands.pop()
+
+print(graphviz.create_graph(ast))

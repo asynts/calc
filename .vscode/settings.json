@@ -2,5 +2,6 @@
     "files.exclude": {
         "**/.git/": true,
         "**/__pycache__/": true,
+        "hello.png": true,
     }
 }

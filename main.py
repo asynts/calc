@@ -15,9 +15,9 @@ try:
             value = runtime.evaluate(ast)
 
             if value == None:
-                print('<nil>')
+                pass
             elif isinstance(value, int):
-                print(f'<integer>: {value}')
+                print(value)
             else:
                 raise NotImplementedError
         except lang.Error as err:

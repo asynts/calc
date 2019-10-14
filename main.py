@@ -3,7 +3,7 @@
 import lang
 import graphviz
 
-tokens = lang.lexer.lex('42 + foo(2 * (20 + 1))')
+tokens = lang.lexer.lex('foo = bar = 1 + 2 + 3')
 
 parser = lang.parser.Parser(tokens)
 parser._parse_expression()

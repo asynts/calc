@@ -36,6 +36,14 @@ PRECEDENCE = {
     '/': 2,
 }
 
+ASSOCIATIVITY = {
+    '=': 'right',
+    '+': 'left',
+    '-': 'left',
+    '*': 'left',
+    '/': 'left',
+}
+
 class Parser:
     def __init__(self, tokens: typing.List[Token]):
         self._tokens = tokens
@@ -138,12 +146,19 @@ class Parser:
             return False
 
         if self._ahead.category == Category.INFIX:
-            while len(self._operators) > 0 and PRECEDENCE[self._operators[-1].value] >= PRECEDENCE[self._ahead.value]:
-                self._apply(self._operators.pop())
+            if ASSOCIATIVITY[self._ahead.value] == 'left':
+                while len(self._operators) > 0 and PRECEDENCE[self._operators[-1].value] >= PRECEDENCE[self._ahead.value]:
+                    self._apply(self._operators.pop())
+            else:
+                assert ASSOCIATIVITY[self._ahead.value] == 'right'
+
+                while len(self._operators) > 0 and PRECEDENCE[self._operators[-1].value] > PRECEDENCE[self._ahead.value]:
+                    self._apply(self._operators.pop())
+
             self._operators.append(self._ahead)
             self._cursor += 1
             return True
-        
+                
         return False
 
     def _parse_parentheses(self):

@@ -12,6 +12,8 @@ unknown variable at :0
 1
 > foo + 2
 3
+> -(1 + 2)
+-3
 ~~~
 
 The help page lists all features:
@@ -19,16 +21,19 @@ The help page lists all features:
 ~~~
 > help()
 OPERATIONS
-  a     variable lookup
-a = b   variable assignment
-a + b   add
-a - b   subtract
-a * b   multiply
-a / b   divide
-bar()   function call
- (a)    group
+name
+name = expr
+name()
+
+-expr
+(expr)
+
+expr + expr
+expr - expr
+expr * expr
+expr / expr
 
 FUNCTIONS
-help()  print help
-exit()  terminate
+help()
+exit()
 ~~~

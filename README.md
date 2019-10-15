@@ -2,28 +2,26 @@
 This is an interpreter for algebraic expressions. A live demonstration:
 
 ~~~
-> 1
+>>> 1
 1
-> (20 + 1) * 2
+>>> (20 + 1) * 2
 42
-> foo
+>>> foo
 unknown variable at :0
-> foo = 1
+>>> foo = 1
 1
-> foo + 2
+>>> foo + 2
 3
-> -(1 + 2)
+>>> -(1 + 2)
 -3
 ~~~
 
 The help page lists all features:
 
 ~~~
-> help()
-OPERATIONS
+>>> help()
 name
 name = expr
-name()
 
 -expr
 (expr)
@@ -33,7 +31,6 @@ expr - expr
 expr * expr
 expr / expr
 
-FUNCTIONS
 help()
 exit()
 ~~~

@@ -6,7 +6,7 @@ runtime = calc.runtime.Runtime()
 
 try:
     while True:
-        input_ = input('> ')
+        input_ = input('>>> ')
 
         try:
             tokens = calc.lexer.lex(input_)

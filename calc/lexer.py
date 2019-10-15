@@ -1,4 +1,4 @@
-"""
+'''
 <expression> ::= WS? <term> WS? (INFIX WS? <term> WS?)* ;
 
 <term> :: = PREFIX* WS? <value> ;
@@ -10,7 +10,7 @@
          ;
 
 <arguments> ::= <expression> (',' <expression>)* ;
-"""
+'''
 
 import re, typing
 

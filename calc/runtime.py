@@ -13,11 +13,9 @@ class Runtime:
         self._functions = {}
 
         self._functions['exit'] = lambda: sys.exit()
-        self._functions['help'] = lambda: print("""\
-OPERATIONS
+        self._functions['help'] = lambda: print('''\
 name
 name = expr
-name()
 
 -expr
 (expr)
@@ -27,51 +25,53 @@ expr - expr
 expr * expr
 expr / expr
 
-FUNCTIONS
 help()
 exit()
-""", end='')
+''', end='')
 
-    def evaluate(self, ast: parser.Expr) -> int:
-        if isinstance(ast, parser.ExprInteger):
-            return ast.value
+    def evaluate(self, node: parser.Expr) -> int:
+        if node == None:
+            return None
 
-        if isinstance(ast, parser.ExprLookup):
-            if not ast.name in self._variables:
-                raise RuntimeError(ast.offset, 'unknown variable')
+        if isinstance(node, parser.ExprInteger):
+            return node.value
 
-            return self._variables[ast.name]
+        if isinstance(node, parser.ExprLookup):
+            if not node.name in self._variables:
+                raise RuntimeError(node.offset, 'unknown variable')
+
+            return self._variables[node.name]
         
-        if isinstance(ast, parser.ExprInvoke):
-            if not ast.name in self._functions:
-                raise RuntimeError(ast.offset, 'unknown function')
+        if isinstance(node, parser.ExprInvoke):
+            if not node.name in self._functions:
+                raise RuntimeError(node.offset, 'unknown function')
 
-            func = self._functions[ast.name]
-            args = [self.evaluate(argument) for argument in ast.arguments]
+            func = self._functions[node.name]
+            args = [self.evaluate(argument) for argument in node.arguments]
 
             return func(*args)
 
-        if isinstance(ast, parser.ExprUnary):
-            if ast.operator == '-':
-                return -self.evaluate(ast.expression)
+        if isinstance(node, parser.ExprUnary):
+            if node.operator == '-':
+                return -self.evaluate(node.expression)
             
             raise NotImplementedError
 
-        if isinstance(ast, parser.ExprBinary):
-            if ast.operator == '+':
-                return self.evaluate(ast.lhs) + self.evaluate(ast.rhs)
-            if ast.operator == '-':
-                return self.evaluate(ast.lhs) - self.evaluate(ast.rhs)
-            if ast.operator == '*':
-                return self.evaluate(ast.lhs) * self.evaluate(ast.rhs)
-            if ast.operator == '/':
-                return self.evaluate(ast.lhs) / self.evaluate(ast.rhs)
-            if ast.operator == '=':
-                if not isinstance(ast.lhs, parser.ExprLookup):
-                    raise RuntimeError(ast.offset, "can't assign to rvalue")
+        if isinstance(node, parser.ExprBinary):
+            if node.operator == '+':
+                return self.evaluate(node.lhs) + self.evaluate(node.rhs)
+            if node.operator == '-':
+                return self.evaluate(node.lhs) - self.evaluate(node.rhs)
+            if node.operator == '*':
+                return self.evaluate(node.lhs) * self.evaluate(node.rhs)
+            if node.operator == '/':
+                return self.evaluate(node.lhs) / self.evaluate(node.rhs)
+            if node.operator == '=':
+                if not isinstance(node.lhs, parser.ExprLookup):
+                    raise RuntimeError(node.offset, "can't assign to rvalue")
 
-                self._variables[ast.lhs.name] = self.evaluate(ast.rhs)
-                return self._variables[ast.lhs.name]
+                self._variables[node.lhs.name] = self.evaluate(node.rhs)
+                return self._variables[node.lhs.name]
 
             raise NotImplementedError
 

@@ -87,9 +87,6 @@ class Parser:
             ))
             return
 
-        if operator.category in [Category.PREFIX, Category.POSTFIX]:
-            raise NotImplementedError
-
         raise AssertionError
 
     def _parse_value(self):
@@ -225,10 +222,17 @@ class Parser:
         assert len(self._operands) == 1
         return True
 
+    def parse(self):
+        return self._parse_expression()
+
+    def finalize(self):
+        assert len(self._operands) == 1
+        return self._operands.pop()
+
 def parse(tokens: typing.List[Token]):
     parser = Parser(tokens)
 
-    if not parser._parse_expression():
+    if not parser.parse():
         return None
     
-    return parser._operands.pop()
+    return parser.finalize()

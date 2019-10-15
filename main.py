@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-import lang
+import calc
 
-runtime = lang.runtime.Runtime()
+runtime = calc.runtime.Runtime()
 
 try:
     while True:
         input_ = input('> ')
 
         try:
-            tokens = lang.lexer.lex(input_)
-            ast = lang.parser.parse(tokens)
+            tokens = calc.lexer.lex(input_)
+            ast = calc.parser.parse(tokens)
 
             value = runtime.evaluate(ast)
 
@@ -20,7 +20,7 @@ try:
                 print(value)
             else:
                 raise NotImplementedError
-        except lang.Error as err:
+        except calc.Error as err:
             print(f'{err.message} at :{err.offset}')
 except (KeyboardInterrupt, EOFError):
     print()

@@ -1,20 +1,20 @@
 # calc
 This is an interpreter for algebraic expressions. Example:
 
-~~~
->>> 1
+<pre><code>
+<b>>>> 1</b>
 1
->>> (20 + 1) * 2
+<b>>>> (20 + 1) * 2</b>
 42
->>> foo
+<b>>>> foo</b>
 unknown variable at :0
->>> foo = 1
+<b>>>> foo = 1</b>
 1
->>> foo + 2
+<b>>>> foo + 2</b>
 3
->>> -(1 + 2)
+<b>>>> -(1 + 2)</b>
 -3
->>> help()
+<b>>>> help()</b>
 name
 name = expr
 
@@ -28,4 +28,4 @@ expr / expr
 
 help()
 exit()
-~~~
+</pre></code>

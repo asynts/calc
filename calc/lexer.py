@@ -5,7 +5,7 @@
 
 <value> ::= '(' <expression> ')'
          / INTEGER
-         / IDENTIFIER '(' <arguments>? ')'
+         / IDENTIFIER WS? '(' <arguments>? ')'
          / IDENTIFIER
          ;
 
@@ -116,8 +116,10 @@ class Lexer:
         if self._regex(self._re_integer, Category.INTEGER):
             return True
 
-        # rule: IDENTIFIER '(' <arguments>? ')'
+        # rule: IDENTIFIER WS? '(' <arguments>? ')'
         if self._regex(self._re_identifier, Category.INVOKE):
+            self._lex_whitespace()
+
             if self._match('(', Category.OPEN):
                 offset = self._output[-1].offset
 

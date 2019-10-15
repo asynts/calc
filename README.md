@@ -1,5 +1,5 @@
 # calc
-This is an interpreter for algebraic expressions. A live demonstration:
+This is an interpreter for algebraic expressions. Example:
 
 ~~~
 >>> 1
@@ -14,11 +14,6 @@ unknown variable at :0
 3
 >>> -(1 + 2)
 -3
-~~~
-
-The help page lists all features:
-
-~~~
 >>> help()
 name
 name = expr

@@ -1,7 +1,7 @@
 """
-<expression> ::= WS? <term> WS? (INFIX <term> WS?)* ;
+<expression> ::= WS? <term> WS? (INFIX WS? <term> WS?)* ;
 
-<term> :: = PREFIX* WS? <value> WS? POSTFIX* ;
+<term> :: = PREFIX* WS? <value> ;
 
 <value> ::= '(' <expression> ')'
          / INTEGER
@@ -24,8 +24,8 @@ class LexerError(Error):
 
 class Category(Enum):
     INTEGER = 0
-    VARIABLE = 2
-    INVOKE = 9
+    VARIABLE = 1
+    INVOKE = 2
 
     OPEN = 3
     CLOSE = 4
@@ -33,7 +33,6 @@ class Category(Enum):
 
     PREFIX = 6
     INFIX = 7
-    POSTFIX = 8
 
 @dataclass
 class Token:
@@ -150,28 +149,16 @@ class Lexer:
             self._restore(backup)
             return False
 
-        self._lex_whitespace()
-
-        while self._lex_postfix():
-            pass
-
         return True
 
     def _lex_prefix(self):
-        for op in ['++', '--', '-']:
-            if self._match(op, Category.PREFIX):
-                return True
+        if self._match('-', Category.PREFIX):
+            return True
         return False
 
     def _lex_infix(self):
         for op in '+-*/=':
             if self._match(op, Category.INFIX):
-                return True
-        return False
-
-    def _lex_postfix(self):
-        for op in ['++', '--']:
-            if self._match(op, Category.POSTFIX):
                 return True
         return False
     
@@ -191,8 +178,9 @@ class Lexer:
         self._lex_whitespace()
 
         while self._lex_infix():
+            self._lex_whitespace()
             if not self._lex_term():
-                raise LexerError
+                raise LexerError(self._cursor, 'expected term')
             self._lex_whitespace()
         
         return True

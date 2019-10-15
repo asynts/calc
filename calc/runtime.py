@@ -15,18 +15,21 @@ class Runtime:
         self._functions['exit'] = lambda: sys.exit()
         self._functions['help'] = lambda: print("""\
 OPERATIONS
-  a     variable lookup
-a = b   variable assignment
-a + b   add
-a - b   subtract
-a * b   multiply
-a / b   divide
-bar()   function call
- (a)    group
+name
+name = expr
+name()
+
+-expr
+(expr)
+
+expr + expr
+expr - expr
+expr * expr
+expr / expr
 
 FUNCTIONS
-help()  print help
-exit()  terminate
+help()
+exit()
 """, end='')
 
     def evaluate(self, ast: parser.Expr) -> int:
@@ -47,6 +50,12 @@ exit()  terminate
             args = [self.evaluate(argument) for argument in ast.arguments]
 
             return func(*args)
+
+        if isinstance(ast, parser.ExprUnary):
+            if ast.operator == '-':
+                return -self.evaluate(ast.expression)
+            
+            raise NotImplementedError
 
         if isinstance(ast, parser.ExprBinary):
             if ast.operator == '+':

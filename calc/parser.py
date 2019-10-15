@@ -26,6 +26,11 @@ class ExprInvoke(Expr):
     arguments: typing.List[Expr]
 
 @dataclass
+class ExprUnary(Expr):
+    operator: str
+    expression: Expr
+
+@dataclass
 class ExprBinary(Expr):
     operator: str
     lhs: Expr
@@ -148,6 +153,21 @@ class Parser:
     def _parse_operator(self):
         if not self._has_more:
             return False
+
+        if self._ahead.category == Category.PREFIX:
+            node = ExprUnary(
+                offset=self._ahead.offset,
+                operator=self._ahead.value,
+                expression=None
+            )
+            self._cursor += 1
+            self._parse_expression()
+
+            node.expression = self._operands.pop()
+            self._operands.append(node)
+
+            return True
+
 
         if self._ahead.category == Category.INFIX:
             if ASSOCIATIVITY[self._ahead.value] == 'left':

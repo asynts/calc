@@ -6,7 +6,8 @@ This is an interpreter for algebraic expressions. Example:
 <b>>>> (20 + 1) * 2</b>
 42
 <b>>>> foo</b>
-unknown variable at :0
+    ^
+error, uninitialized variable
 <b>>>> foo = 1</b>
 1
 <b>>>> foo + 2</b>

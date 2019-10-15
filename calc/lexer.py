@@ -109,7 +109,7 @@ class Lexer:
             if self._match(')', Category.CLOSE):
                 return True
             else:
-                raise LexerError(offset, 'unclosed parentheses')
+                raise LexerError(offset, 'missing closing parenthesis')
 
         # rule: INTEGER
         if self._regex(self._re_integer, Category.INTEGER):
@@ -125,7 +125,7 @@ class Lexer:
                 self._lex_arguments()
 
                 if not self._match(')', Category.CLOSE):
-                    raise LexerError(offset, 'unclosed parentheses')
+                    raise LexerError(offset, 'missing closing parenthesis')
 
                 return True
             
@@ -180,7 +180,7 @@ class Lexer:
         while self._lex_infix():
             self._lex_whitespace()
             if not self._lex_term():
-                raise LexerError(self._cursor, 'expected term')
+                raise LexerError(self._cursor, 'expected expression')
             self._lex_whitespace()
         
         return True
@@ -190,7 +190,7 @@ class Lexer:
     
     def finalize(self):
         if self.has_more:
-            raise LexerError(self._cursor, 'unrecognized input')
+            raise LexerError(self._cursor, 'invalid syntax')
 
         return self._output
 

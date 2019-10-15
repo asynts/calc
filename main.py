@@ -21,6 +21,7 @@ try:
             else:
                 raise NotImplementedError
         except calc.Error as err:
-            print(f'{err.message} at :{err.offset}')
+            print('    ' + ' ' * err.offset + '^')
+            print(f'error, {err.message}')
 except (KeyboardInterrupt, EOFError):
     print()

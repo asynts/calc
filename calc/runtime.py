@@ -38,13 +38,13 @@ exit()
 
         if isinstance(node, parser.ExprLookup):
             if not node.name in self._variables:
-                raise RuntimeError(node.offset, 'unknown variable')
+                raise RuntimeError(node.offset, 'uninitialized variable')
 
             return self._variables[node.name]
         
         if isinstance(node, parser.ExprInvoke):
             if not node.name in self._functions:
-                raise RuntimeError(node.offset, 'unknown function')
+                raise RuntimeError(node.offset, 'undefined function')
 
             func = self._functions[node.name]
             args = [self.evaluate(argument) for argument in node.arguments]
@@ -68,7 +68,7 @@ exit()
                 return self.evaluate(node.lhs) / self.evaluate(node.rhs)
             if node.operator == '=':
                 if not isinstance(node.lhs, parser.ExprLookup):
-                    raise RuntimeError(node.offset, "can't assign to rvalue")
+                    raise RuntimeError(node.offset, 'left side of assignment not assignable')
 
                 self._variables[node.lhs.name] = self.evaluate(node.rhs)
                 return self._variables[node.lhs.name]

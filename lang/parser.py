@@ -17,7 +17,7 @@ class ExprInteger(Expr):
     value: int
 
 @dataclass
-class ExprBinding(Expr):
+class ExprLookup(Expr):
     name: str
 
 @dataclass
@@ -136,7 +136,7 @@ class Parser:
                 self._restore(backup)
 
         if self._ahead.category == Category.VARIABLE:
-            self._operands.append(ExprBinding(
+            self._operands.append(ExprLookup(
                 offset=self._ahead.offset,
                 name=self._ahead.value
             ))

@@ -3,5 +3,7 @@
         "**/.git/": true,
         "**/__pycache__/": true,
         "hello.png": true,
-    }
+    },
+
+    "editor.selectionClipboard": false,
 }

@@ -9,26 +9,23 @@ class RuntimeError(Error):
 
 class Runtime:
     def __init__(self):
-        self._bindings = {}
+        self._variables = {}
         self._functions = {}
 
         self._functions['exit'] = lambda: sys.exit()
         self._functions['help'] = lambda: print("""\
 OPERATIONS
-  a     lookup a binding
-a = b   assign a binding
-
-bar()   call a function
-
- (a)    group operations
-
+  a     variable lookup
+a = b   variable assignment
 a + b   add
 a - b   subtract
 a * b   multiply
 a / b   divide
+bar()   function call
+ (a)    group
 
 FUNCTIONS
-help()  print this help
+help()  print help
 exit()  terminate
 """, end='')
 
@@ -36,11 +33,11 @@ exit()  terminate
         if isinstance(ast, parser.ExprInteger):
             return ast.value
 
-        if isinstance(ast, parser.ExprBinding):
-            if not ast.name in self._bindings:
-                raise RuntimeError(ast.offset, 'unknown binding')
+        if isinstance(ast, parser.ExprLookup):
+            if not ast.name in self._variables:
+                raise RuntimeError(ast.offset, 'unknown variable')
 
-            return self._bindings[ast.name]
+            return self._variables[ast.name]
         
         if isinstance(ast, parser.ExprInvoke):
             if not ast.name in self._functions:
@@ -61,11 +58,11 @@ exit()  terminate
             if ast.operator == '/':
                 return self.evaluate(ast.lhs) / self.evaluate(ast.rhs)
             if ast.operator == '=':
-                if not isinstance(ast.lhs, parser.ExprBinding):
+                if not isinstance(ast.lhs, parser.ExprLookup):
                     raise RuntimeError(ast.offset, "can't assign to rvalue")
 
-                self._bindings[ast.lhs.name] = self.evaluate(ast.rhs)
-                return self._bindings[ast.lhs.name]
+                self._variables[ast.lhs.name] = self.evaluate(ast.rhs)
+                return self._variables[ast.lhs.name]
 
             raise NotImplementedError
 
